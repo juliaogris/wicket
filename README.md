@@ -3,41 +3,49 @@
 A small gate for your web content.
 
 Wicket is an HTTP server written in Rust that serves static files behind
-Google OAuth, restricting access to users in a given Google Workspace
-domain. Designed for deployment on Google Cloud Run.
+Google OAuth, restricting access to users from configured Google
+Workspace domains or individual email addresses. Designed for
+deployment on Google Cloud Run.
 
 ## Goals
 
 **v0: domain-gated static site**
 
-- Serve static files from an embedded directory
-- Authenticate users via Google OAuth 2.0
-- Restrict access to a configured Google Workspace domain (via the `hd`
-  claim in the ID token)
+- Serve static files from a local directory behind Google OAuth 2.0
+- Restrict access by Google Workspace domain (`hd` claim) or
+  individual email address
 - Manage sessions with signed cookies
+- Deploy on Cloud Run
 
-**Future: path and method access rules**
+**Future**
 
-Extend wicket into an identity-aware HTTP gateway with per-path access
-rules, inspired by Firebase security rules. First match wins, unmatched
-requests are denied.
+- YAML config file with multi-provider allow-lists (Google, GitHub)
+- GitHub OAuth as a second identity provider
+- Embedded static files for single-binary deployment
+- Path and method access rules, inspired by Firebase security rules
+- Compose with [hearth](https://github.com/juliaogris/hearth) as an
+  auth layer for data APIs
 
 ```yaml
+allow:
+  google:
+    domains:
+      - goteleport.com
+    emails:
+      - julia.ogris@gmail.com
+  github:
+    orgs:
+      - gravitational
+
 rules:
   - path: /admin/**
     if: 'contains(user.roles, "admin")'
-
-  - path: /users/{USER_ID}/**
+  - path: /data/user/{USER_ID}/**
     methods: [GET, PUT]
     if: 'user.name == USER_ID'
-
   - path: /public/**
     methods: [GET]
 ```
-
-Path variables like `{USER_ID}` are captured and available in identity
-expressions. This turns wicket from a simple auth gate into a reviewable,
-self-contained access policy layer.
 
 ## Stack
 
